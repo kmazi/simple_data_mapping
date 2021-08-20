@@ -5,7 +5,7 @@ from typing import Dict, List, Literal, Optional, Set, Union
 from pydantic import BaseModel, Field, HttpUrl
 from requests import Session
 
-from util import fetch, logger, pretty_print, to_datetime
+from util import HTMLStripper, fetch, logger, pretty_print, to_datetime
 
 log = logger(__name__)
 
@@ -185,10 +185,10 @@ class Article(BaseModel):
         detail["thumbnail"] = response.get("thumbnail")
         # create category set if val is available else set to None
         cat = response.get("category")
-        detail["categories"] = set(cat) if cat else cat
+        detail["categories"] = {cat,} if cat else cat
         # create tag set if val is available else set to None
         tag = response.get("tag")
-        detail["tags"] = set(tag) if tag else tag
+        detail["tags"] = {tag,} if tag else tag
 
         detail["author"] = response.get("author")
         detail["publication_date"] = response["pub_date"]
@@ -301,6 +301,9 @@ class Article(BaseModel):
             for field in s_type["fields"]:
                 if field == "publication_date":
                     section_data["publication_date"] = to_datetime(header["pub_date"], sep=";")
+                elif field == "text":
+                    html_stripper = HTMLStripper()
+                    section_data[field] = html_stripper.read(header.get(field))
                 else:
                     section_data[field] = header.get(field)
             section = SectionType(**section_data)

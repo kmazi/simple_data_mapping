@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import Callable, Dict, List, Optional
 
 from aiohttp import ClientSession as Session
+from html.parser import HTMLParser
 from pydantic import HttpUrl
 from requests.exceptions import HTTPError
 
@@ -16,6 +17,24 @@ def logger(name:str):
     return logger
 
 log = logger(__name__)
+
+
+class HTMLStripper(HTMLParser):
+    def __init__(self):
+        # initialize the base class
+        HTMLParser.__init__(self)
+
+    def read(self, data:str):
+        # clear the current output before re-use
+        self._lines = []
+        # re-set the parser's state before re-use
+        self.reset()
+        self.feed(data)
+        return ''.join(self._lines)
+
+    def handle_data(self, d):
+        self._lines.append(d)
+
 
 async def fetch(session:Session, url: HttpUrl) -> Optional[List[Dict]]:
     """Fetch all data in api via given url.
